@@ -1,4 +1,4 @@
-package com.example.remicon_service_web_app
+package com.gsenc.rtis
 
 import io.flutter.embedding.android.FlutterActivity
 
