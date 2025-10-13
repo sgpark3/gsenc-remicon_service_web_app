@@ -54,53 +54,63 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(backgroundColor: Colors.white,toolbarHeight: 0,),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          toolbarHeight: 0,
+        ),
         body: SafeArea(
             child: InAppWebView(
-                  initialUrlRequest:
-                      URLRequest(url: WebUri(
-                        // 'http://10.51.168.128:3000'
-                        'https://m-rtis-pilot.gsenc.com/login'
-                        )),
-                  initialSettings: InAppWebViewSettings(
-                    // isInspectable: kWebviewDebug,
-                    // userAgent: kUserAgentForFmcs,
-                    //
-                    allowsBackForwardNavigationGestures: true,
-                    allowFileAccess: true,
-                    allowFileAccessFromFileURLs: true,
-                    allowUniversalAccessFromFileURLs: true,
-                    allowsInlineMediaPlayback: true,
-                    allowsLinkPreview: false,
-                    // enableViewportScale: false,
-                    javaScriptEnabled: true,
-                    mediaPlaybackRequiresUserGesture: false,
-                    supportZoom: true,
-                    useHybridComposition: true,
-                    useShouldOverrideUrlLoading: true,
-                    useWideViewPort: true,
-                    useOnDownloadStart: true,
-                    //
-                    // clearCache: _clearCache,
-                    // clearSessionCache: _clearSession,
-                  ),
-                  shouldOverrideUrlLoading: (controller, navigationAction) async {
-                    Uri uri = navigationAction.request.url!;
-                    // tel
-                    if (uri.isScheme('tel')) {
-                      if (await canLaunchUrl(uri)) {
-            final phoneNumber =
-                uri.toString().replaceAll(RegExp(r'[^0-9]'), '');
-            if (phoneNumber.contains('tel')) {
-              await launchUrlString(phoneNumber);
-            } else {
-              await launchUrlString('tel:$phoneNumber');
+          initialUrlRequest: URLRequest(url: WebUri(
+              // 'http://10.51.168.128:3000'
+              'https://m-rtis-pilot.gsenc.com/login')),
+          initialSettings: InAppWebViewSettings(
+            // isInspectable: kWebviewDebug,
+            // userAgent: kUserAgentForFmcs,
+            //
+            allowsBackForwardNavigationGestures: true,
+            allowFileAccess: true,
+            allowFileAccessFromFileURLs: true,
+            allowUniversalAccessFromFileURLs: true,
+            allowsInlineMediaPlayback: true,
+            allowsLinkPreview: false,
+            // enableViewportScale: false,
+            javaScriptEnabled: true,
+            mediaPlaybackRequiresUserGesture: false,
+            supportZoom: true,
+            useHybridComposition: true,
+            useShouldOverrideUrlLoading: true,
+            useWideViewPort: true,
+            useOnDownloadStart: true,
+            //
+            // clearCache: _clearCache,
+            // clearSessionCache: _clearSession,
+          ),
+          shouldOverrideUrlLoading: (controller, navigationAction) async {
+            Uri uri = navigationAction.request.url!;
+
+            // weather: external browser
+            if (uri.toString().contains("www.weather.go.kr")) {
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+              return NavigationActionPolicy.CANCEL;
             }
-                      }
-                      return NavigationActionPolicy.CANCEL;
-                    }
-                    return NavigationActionPolicy.ALLOW;
-                  },
-                )));
+
+            // tel
+            if (uri.isScheme('tel')) {
+              if (await canLaunchUrl(uri)) {
+                final phoneNumber =
+                    uri.toString().replaceAll(RegExp(r'[^0-9]'), '');
+                if (phoneNumber.contains('tel')) {
+                  await launchUrlString(phoneNumber);
+                } else {
+                  await launchUrlString('tel:$phoneNumber');
+                }
+              }
+              return NavigationActionPolicy.CANCEL;
+            }
+            return NavigationActionPolicy.ALLOW;
+          },
+        )));
   }
 }
