@@ -1,16 +1,16 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:remicon_service_web_app/util/app_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-    await InAppWebViewController.setWebContentsDebuggingEnabled(kDebugMode);
-  }
+  // if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+  //   await InAppWebViewController.setWebContentsDebuggingEnabled(kDebugMode);
+  // }
 
   SystemChrome.setSystemUIOverlayStyle(
     SystemUiOverlayStyle(
@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'XiRtis',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
@@ -53,64 +53,61 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          toolbarHeight: 0,
-        ),
-        body: SafeArea(
-            child: InAppWebView(
-          initialUrlRequest: URLRequest(url: WebUri(
-              // 'http://10.51.168.128:3000'
-              'https://m-rtis-pilot.gsenc.com/login')),
-          initialSettings: InAppWebViewSettings(
-            // isInspectable: kWebviewDebug,
-            // userAgent: kUserAgentForFmcs,
-            //
-            allowsBackForwardNavigationGestures: true,
-            allowFileAccess: true,
-            allowFileAccessFromFileURLs: true,
-            allowUniversalAccessFromFileURLs: true,
-            allowsInlineMediaPlayback: true,
-            allowsLinkPreview: false,
-            // enableViewportScale: false,
-            javaScriptEnabled: true,
-            mediaPlaybackRequiresUserGesture: false,
-            supportZoom: true,
-            useHybridComposition: true,
-            useShouldOverrideUrlLoading: true,
-            useWideViewPort: true,
-            useOnDownloadStart: true,
-            //
-            // clearCache: _clearCache,
-            // clearSessionCache: _clearSession,
-          ),
-          shouldOverrideUrlLoading: (controller, navigationAction) async {
-            Uri uri = navigationAction.request.url!;
+    final controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onProgress: (int progress) {
+            // Update loading bar.
+          },
+          onPageStarted: (String url) {},
+          onPageFinished: (String url) {},
+          onHttpError: (HttpResponseError error) {},
+          onWebResourceError: (WebResourceError error) {},
+          onNavigationRequest: (NavigationRequest request) async {
+            appPrintI(request.url);
+            appPrintC(
+                'check weather: ${request.url.contains("www.weather.go.kr")}');
 
             // weather: external browser
-            if (uri.toString().contains("www.weather.go.kr")) {
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
-              return NavigationActionPolicy.CANCEL;
-            }
+            if (request.url.contains("www.weather.go.kr")) {
+              appPrintC('enter:www.weather.go.kr');
+              await launchUrl(Uri.parse(request.url),
+                  mode: LaunchMode.externalApplication);
 
+              return NavigationDecision.prevent;
+            }
             // tel
-            if (uri.isScheme('tel')) {
-              if (await canLaunchUrl(uri)) {
+            if (request.url.startsWith('tel')) {
+              if (await canLaunchUrl(Uri.parse(request.url))) {
                 final phoneNumber =
-                    uri.toString().replaceAll(RegExp(r'[^0-9]'), '');
+                    request.url.toString().replaceAll(RegExp(r'[^0-9]'), '');
                 if (phoneNumber.contains('tel')) {
                   await launchUrlString(phoneNumber);
                 } else {
                   await launchUrlString('tel:$phoneNumber');
                 }
               }
-              return NavigationActionPolicy.CANCEL;
+              return NavigationDecision.prevent;
             }
-            return NavigationActionPolicy.ALLOW;
+
+            return NavigationDecision.navigate;
           },
-        )));
+        ),
+      )
+      ..loadRequest(Uri.parse(
+        // 'http://10.51.168.128:3000/'
+          // 'https://m-rtis-pilot-dev.gsenc.com'
+          'https://m-rtis-pilot.gsenc.com'
+          ));
+    return Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          toolbarHeight: 0,
+        ),
+        body: Container(
+          decoration: BoxDecoration(color: Colors.white),
+          child: SafeArea(child: WebViewWidget(controller: controller)),
+        ));
   }
 }
