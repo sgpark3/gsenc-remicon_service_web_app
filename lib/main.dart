@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:remicon_service_web_app/util/app_logger.dart';
+import 'package:remicon_service_web_app/util/app_packageinfo.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
@@ -20,11 +22,13 @@ Future<void> main() async {
     ),
   );
 
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({
+    super.key,
+  });
 
   // This widget is the root of your application.
   @override
@@ -36,7 +40,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const MyHomePage(),
+      home: MyHomePage(),
     );
   }
 }
@@ -58,59 +62,80 @@ class _MyHomePageState extends State<MyHomePage> {
           backgroundColor: Colors.white,
           toolbarHeight: 0,
         ),
-        body: SafeArea(
-            child: InAppWebView(
-          initialUrlRequest: URLRequest(url: WebUri(
-              // 'http://10.51.168.128:3000'
-              'https://m-rtis-pilot.gsenc.com/login')),
-          initialSettings: InAppWebViewSettings(
-            // isInspectable: kWebviewDebug,
-            // userAgent: kUserAgentForFmcs,
-            //
-            allowsBackForwardNavigationGestures: true,
-            allowFileAccess: true,
-            allowFileAccessFromFileURLs: true,
-            allowUniversalAccessFromFileURLs: true,
-            allowsInlineMediaPlayback: true,
-            allowsLinkPreview: false,
-            // enableViewportScale: false,
-            javaScriptEnabled: true,
-            mediaPlaybackRequiresUserGesture: false,
-            supportZoom: true,
-            useHybridComposition: true,
-            useShouldOverrideUrlLoading: true,
-            useWideViewPort: true,
-            useOnDownloadStart: true,
-            //
-            // clearCache: _clearCache,
-            // clearSessionCache: _clearSession,
-          ),
-          shouldOverrideUrlLoading: (controller, navigationAction) async {
-            Uri uri = navigationAction.request.url!;
+        body: FutureBuilder(
+            future: AppPackageinfo.getAppVersion(),
+            builder: (context, asyncSnapshot) {
+              return SafeArea(
+                  child: (asyncSnapshot.data == null)
+                      ? Text('...laoding')
+                      : InAppWebView(
+                          initialUrlRequest: URLRequest(
+                              url: WebUri('http://10.51.168.128:3000'
+                                  // 'https://m-rtis-pilot.gsenc.com/login'
+                                  )),
+                          initialSettings: InAppWebViewSettings(
+                              // isInspectable: kWebviewDebug,
+                              // userAgent: kUserAgentForFmcs,
+                              //
+                              allowsBackForwardNavigationGestures: true,
+                              allowFileAccess: true,
+                              allowFileAccessFromFileURLs: true,
+                              allowUniversalAccessFromFileURLs: true,
+                              allowsInlineMediaPlayback: true,
+                              allowsLinkPreview: false,
+                              // enableViewportScale: false,
+                              javaScriptEnabled: true,
+                              mediaPlaybackRequiresUserGesture: false,
+                              supportZoom: true,
+                              useHybridComposition: true,
+                              useShouldOverrideUrlLoading: true,
+                              useWideViewPort: true,
+                              useOnDownloadStart: true,
+                              userAgent: 'xirtis:${asyncSnapshot.data}'
+                              //
+                              // clearCache: _clearCache,
+                              // clearSessionCache: _clearSession,
+                              ),
+                          shouldOverrideUrlLoading:
+                              (controller, navigationAction) async {
+                            Uri uri = navigationAction.request.url!;
 
-            // weather: external browser
-            if (uri.toString().contains("www.weather.go.kr")) {
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
-              return NavigationActionPolicy.CANCEL;
-            }
+                            // external browser
+                            if (uri.toString().contains('externalbrowser://')) {
+                              final str = uri.toString();
+                              String newStrUrl =
+                                  str.replaceAll('externalbrowser://', '');
+                              if (!newStrUrl.contains('https:')) {
+                                newStrUrl =
+                                    newStrUrl.replaceAll('https', 'https:');
+                              }
 
-            // tel
-            if (uri.isScheme('tel')) {
-              if (await canLaunchUrl(uri)) {
-                final phoneNumber =
-                    uri.toString().replaceAll(RegExp(r'[^0-9]'), '');
-                if (phoneNumber.contains('tel')) {
-                  await launchUrlString(phoneNumber);
-                } else {
-                  await launchUrlString('tel:$phoneNumber');
-                }
-              }
-              return NavigationActionPolicy.CANCEL;
-            }
-            return NavigationActionPolicy.ALLOW;
-          },
-        )));
+                              final extractUri = Uri.parse(newStrUrl);
+
+                              if (await canLaunchUrl(extractUri)) {
+                                await launchUrl(extractUri,
+                                    mode: LaunchMode.externalApplication);
+                              }
+                              return NavigationActionPolicy.CANCEL;
+                            }
+
+                            // tel
+                            if (uri.isScheme('tel')) {
+                              if (await canLaunchUrl(uri)) {
+                                final phoneNumber = uri
+                                    .toString()
+                                    .replaceAll(RegExp(r'[^0-9]'), '');
+                                if (phoneNumber.contains('tel')) {
+                                  await launchUrlString(phoneNumber);
+                                } else {
+                                  await launchUrlString('tel:$phoneNumber');
+                                }
+                              }
+                              return NavigationActionPolicy.CANCEL;
+                            }
+                            return NavigationActionPolicy.ALLOW;
+                          },
+                        ));
+            }));
   }
 }
