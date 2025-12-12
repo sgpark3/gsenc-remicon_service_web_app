@@ -1,9 +1,11 @@
+import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:remicon_service_web_app/util/app_logger.dart';
 import 'package:remicon_service_web_app/util/app_packageinfo.dart';
+import 'package:remicon_service_web_app/util/urlhelper.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
@@ -55,6 +57,27 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  String appUri = 'http://10.51.168.128:3000';
+  InAppWebViewController? controller;
+Key _webviewKey = UniqueKey();
+
+  @override
+  void initState() {
+    AppLinks().uriLinkStream.listen((uri) async {
+      appPrintC('onAppLink: $uri');
+      final parsingUri = uri.toString().split('target=');
+      appUri =Urlhelper.adjustUrl(parsingUri[1]);
+      appPrintC('appUri:$appUri');
+
+    
+      if (controller != null) {
+        _webviewKey=UniqueKey();
+        await controller!.loadUrl(urlRequest: URLRequest(url: WebUri(appUri)));
+      }
+    });
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -69,10 +92,8 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: (asyncSnapshot.data == null)
                       ? Text('...laoding')
                       : InAppWebView(
-                          initialUrlRequest: URLRequest(
-                              url: WebUri('http://10.51.168.128:3000'
-                                  // 'https://m-rtis-pilot.gsenc.com/login'
-                                  )),
+                        key:_webviewKey,
+                          initialUrlRequest: URLRequest(url: WebUri(appUri)),
                           initialSettings: InAppWebViewSettings(
                               // isInspectable: kWebviewDebug,
                               // userAgent: kUserAgentForFmcs,
@@ -96,6 +117,8 @@ class _MyHomePageState extends State<MyHomePage> {
                               // clearCache: _clearCache,
                               // clearSessionCache: _clearSession,
                               ),
+                          onWebViewCreated: (webController) =>
+                              controller = webController,
                           shouldOverrideUrlLoading:
                               (controller, navigationAction) async {
                             Uri uri = navigationAction.request.url!;
