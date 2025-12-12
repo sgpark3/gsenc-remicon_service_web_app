@@ -57,21 +57,22 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  // String appUri = 'https://m-rtis-pilot.gsenc.com';
+  // String appUri = 'https://m-rtis-pilot-dev.gsenc.com';
   String appUri = 'http://10.51.168.128:3000';
   InAppWebViewController? controller;
-Key _webviewKey = UniqueKey();
+  Key _webviewKey = UniqueKey();
 
   @override
   void initState() {
     AppLinks().uriLinkStream.listen((uri) async {
       appPrintC('onAppLink: $uri');
       final parsingUri = uri.toString().split('target=');
-      appUri =Urlhelper.adjustUrl(parsingUri[1]);
+      appUri = Urlhelper.adjustUrl(parsingUri[1]);
       appPrintC('appUri:$appUri');
 
-    
       if (controller != null) {
-        _webviewKey=UniqueKey();
+        _webviewKey = UniqueKey();
         await controller!.loadUrl(urlRequest: URLRequest(url: WebUri(appUri)));
       }
     });
@@ -92,7 +93,7 @@ Key _webviewKey = UniqueKey();
                   child: (asyncSnapshot.data == null)
                       ? Text('...laoding')
                       : InAppWebView(
-                        key:_webviewKey,
+                          key: _webviewKey,
                           initialUrlRequest: URLRequest(url: WebUri(appUri)),
                           initialSettings: InAppWebViewSettings(
                               // isInspectable: kWebviewDebug,
@@ -123,17 +124,23 @@ Key _webviewKey = UniqueKey();
                               (controller, navigationAction) async {
                             Uri uri = navigationAction.request.url!;
 
+                            appPrintC(
+                                uri.toString().contains('externalbrowser://'));
+
                             // external browser
                             if (uri.toString().contains('externalbrowser://')) {
                               final str = uri.toString();
+                              appPrintC(str);
                               String newStrUrl =
                                   str.replaceAll('externalbrowser://', '');
-                              if (!newStrUrl.contains('https:')) {
+                              if (newStrUrl.contains('https//')) {
                                 newStrUrl =
-                                    newStrUrl.replaceAll('https', 'https:');
+                                    newStrUrl.replaceAll('https//', 'https://');
                               }
+                              appPrintC(newStrUrl);
 
                               final extractUri = Uri.parse(newStrUrl);
+                              appPrintC(await canLaunchUrl(extractUri));
 
                               if (await canLaunchUrl(extractUri)) {
                                 await launchUrl(extractUri,
