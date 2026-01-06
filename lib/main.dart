@@ -120,6 +120,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               ),
                           onWebViewCreated: (webController) =>
                               controller = webController,
+                        
                           shouldOverrideUrlLoading:
                               (controller, navigationAction) async {
                             Uri uri = navigationAction.request.url!;
@@ -164,6 +165,9 @@ class _MyHomePageState extends State<MyHomePage> {
                               return NavigationActionPolicy.CANCEL;
                             }
                             return NavigationActionPolicy.ALLOW;
+                          },
+                          onConsoleMessage: (controller, consoleMessage) {
+                            print(consoleMessage);
                           },
                         ));
             }));
