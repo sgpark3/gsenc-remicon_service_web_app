@@ -2,6 +2,7 @@ import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:remicon_service_web_app/util/app_logger.dart';
 import 'package:remicon_service_web_app/util/app_packageinfo.dart';
@@ -11,6 +12,8 @@ import 'package:url_launcher/url_launcher_string.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await dotenv.load(fileName: '.env');
 
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
     await InAppWebViewController.setWebContentsDebuggingEnabled(kDebugMode);
@@ -57,14 +60,17 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  // String appUri = 'https://m-rtis-pilot.gsenc.com';
-  // String appUri = 'https://m-rtis-pilot-dev.gsenc.com';
-  String appUri = 'http://10.51.168.128:3000';
+  _MyHomePageState() : currentMode = kDebugMode ? 'LOCAL' : 'PRO';
+  final String currentMode;
+
+  String appUri = '';
+
   InAppWebViewController? controller;
   Key _webviewKey = UniqueKey();
 
   @override
   void initState() {
+    appUri = dotenv.env['${currentMode}_URL'] ?? '';
     AppLinks().uriLinkStream.listen((uri) async {
       appPrintC('onAppLink: $uri');
       final parsingUri = uri.toString().split('target=');
@@ -97,7 +103,6 @@ class _MyHomePageState extends State<MyHomePage> {
                           initialUrlRequest: URLRequest(url: WebUri(appUri)),
                           initialSettings: InAppWebViewSettings(
                               // isInspectable: kWebviewDebug,
-                              // userAgent: kUserAgentForFmcs,
                               //
                               allowsBackForwardNavigationGestures: true,
                               allowFileAccess: true,
@@ -113,14 +118,14 @@ class _MyHomePageState extends State<MyHomePage> {
                               useShouldOverrideUrlLoading: true,
                               useWideViewPort: true,
                               useOnDownloadStart: true,
-                              userAgent: 'xirtis:${asyncSnapshot.data}'
+                              applicationNameForUserAgent:
+                                  'xirtis:${asyncSnapshot.data}'
                               //
                               // clearCache: _clearCache,
                               // clearSessionCache: _clearSession,
                               ),
                           onWebViewCreated: (webController) =>
                               controller = webController,
-                        
                           shouldOverrideUrlLoading:
                               (controller, navigationAction) async {
                             Uri uri = navigationAction.request.url!;
@@ -165,9 +170,6 @@ class _MyHomePageState extends State<MyHomePage> {
                               return NavigationActionPolicy.CANCEL;
                             }
                             return NavigationActionPolicy.ALLOW;
-                          },
-                          onConsoleMessage: (controller, consoleMessage) {
-                            print(consoleMessage);
                           },
                         ));
             }));
