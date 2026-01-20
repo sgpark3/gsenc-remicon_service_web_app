@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:lottie/lottie.dart';
 import 'package:remicon_service_web_app/util/app_logger.dart';
 import 'package:remicon_service_web_app/util/app_packageinfo.dart';
 import 'package:remicon_service_web_app/util/urlhelper.dart';
+import 'package:remicon_service_web_app/util/webviewHelper.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
@@ -87,6 +89,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final loadingWidget =
+        Center(child: Lottie.asset('assets/lotties/loading.json'));
+
     return Scaffold(
         appBar: AppBar(
           backgroundColor: Colors.white,
@@ -97,81 +102,18 @@ class _MyHomePageState extends State<MyHomePage> {
             builder: (context, asyncSnapshot) {
               return SafeArea(
                   child: (asyncSnapshot.data == null)
-                      ? Text('...laoding')
-                      : InAppWebView(
-                          key: _webviewKey,
-                          initialUrlRequest: URLRequest(url: WebUri(appUri)),
-                          initialSettings: InAppWebViewSettings(
-                              // isInspectable: kWebviewDebug,
-                              //
-                              allowsBackForwardNavigationGestures: true,
-                              allowFileAccess: true,
-                              allowFileAccessFromFileURLs: true,
-                              allowUniversalAccessFromFileURLs: true,
-                              allowsInlineMediaPlayback: true,
-                              allowsLinkPreview: false,
-                              // enableViewportScale: false,
-                              javaScriptEnabled: true,
-                              mediaPlaybackRequiresUserGesture: false,
-                              supportZoom: true,
-                              useHybridComposition: true,
-                              useShouldOverrideUrlLoading: true,
-                              useWideViewPort: true,
-                              useOnDownloadStart: true,
-                              applicationNameForUserAgent:
-                                  'xirtis:${asyncSnapshot.data}'
-                              //
-                              // clearCache: _clearCache,
-                              // clearSessionCache: _clearSession,
-                              ),
-                          onWebViewCreated: (webController) =>
-                              controller = webController,
-                          shouldOverrideUrlLoading:
-                              (controller, navigationAction) async {
-                            Uri uri = navigationAction.request.url!;
-
-                            appPrintC(
-                                uri.toString().contains('externalbrowser://'));
-
-                            // external browser
-                            if (uri.toString().contains('externalbrowser://')) {
-                              final str = uri.toString();
-                              appPrintC(str);
-                              String newStrUrl =
-                                  str.replaceAll('externalbrowser://', '');
-                              if (newStrUrl.contains('https//')) {
-                                newStrUrl =
-                                    newStrUrl.replaceAll('https//', 'https://');
-                              }
-                              appPrintC(newStrUrl);
-
-                              final extractUri = Uri.parse(newStrUrl);
-                              appPrintC(await canLaunchUrl(extractUri));
-
-                              if (await canLaunchUrl(extractUri)) {
-                                await launchUrl(extractUri,
-                                    mode: LaunchMode.externalApplication);
-                              }
-                              return NavigationActionPolicy.CANCEL;
-                            }
-
-                            // tel
-                            if (uri.isScheme('tel')) {
-                              if (await canLaunchUrl(uri)) {
-                                final phoneNumber = uri
-                                    .toString()
-                                    .replaceAll(RegExp(r'[^0-9]'), '');
-                                if (phoneNumber.contains('tel')) {
-                                  await launchUrlString(phoneNumber);
-                                } else {
-                                  await launchUrlString('tel:$phoneNumber');
-                                }
-                              }
-                              return NavigationActionPolicy.CANCEL;
-                            }
-                            return NavigationActionPolicy.ALLOW;
-                          },
-                        ));
+                      ? loadingWidget
+                      : webviewWiget(asyncSnapshot.data!));
             }));
+  }
+
+  Widget webviewWiget(String appVersion) {
+    final webviewhelper = Webviewhelper();
+    return InAppWebView(
+        key: _webviewKey,
+        initialUrlRequest: URLRequest(url: WebUri(appUri)),
+        initialSettings: webviewhelper.initialSettings(appVersion),
+        onWebViewCreated: (webController) => controller = webController,
+        shouldOverrideUrlLoading: webviewhelper.shouldOverrideUrlLoading);
   }
 }
