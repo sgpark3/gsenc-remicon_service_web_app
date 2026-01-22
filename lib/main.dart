@@ -9,8 +9,6 @@ import 'package:remicon_service_web_app/util/app_logger.dart';
 import 'package:remicon_service_web_app/util/app_packageinfo.dart';
 import 'package:remicon_service_web_app/util/urlhelper.dart';
 import 'package:remicon_service_web_app/util/webviewHelper.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:url_launcher/url_launcher_string.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
